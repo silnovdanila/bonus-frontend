@@ -40,7 +40,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'https://bonus-backend-pud0.onrender.com',
         changeOrigin: true,
       },
     },
