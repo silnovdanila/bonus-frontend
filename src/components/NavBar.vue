@@ -5,8 +5,10 @@
         <router-link to="/bonus">ArtixBonus</router-link>
       </div>
 
-      <button class="navbar-toggle" @click="isMenuOpen = !isMenuOpen">
-        ☰
+      <button class="navbar-toggle" @click="isMenuOpen = !isMenuOpen" aria-label="Меню">
+        <span class="hamburger"></span>
+        <span class="hamburger"></span>
+        <span class="hamburger"></span>
       </button>
 
       <div class="navbar-links" :class="{ 'navbar-links-open': isMenuOpen }">
@@ -28,10 +30,7 @@ const router = useRouter();
 const authStore = useAuthStore();
 const isMenuOpen = ref(false);
 
-const closeMenu = () => {
-  isMenuOpen.value = false;
-};
-
+const closeMenu = () => { isMenuOpen.value = false; };
 const logout = () => {
   authStore.logout();
   router.push('/login');
@@ -55,6 +54,7 @@ const logout = () => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 12px 20px;
+  gap: 16px;
 }
 
 .navbar-brand a {
@@ -62,22 +62,32 @@ const logout = () => {
   text-decoration: none;
   font-size: 20px;
   font-weight: bold;
+  white-space: nowrap;
 }
 
 .navbar-toggle {
   display: none;
   background: none;
   border: none;
-  color: white;
-  font-size: 24px;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 8px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hamburger {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: white;
+  border-radius: 2px;
 }
 
 .navbar-links {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .navbar-links a {
@@ -86,15 +96,11 @@ const logout = () => {
   padding: 6px 12px;
   border-radius: 4px;
   transition: background 0.2s;
+  font-size: 14px;
 }
 
-.navbar-links a:hover {
-  background: #34495e;
-}
-
-.navbar-links a.router-link-active {
-  background: #3a5a7a;
-}
+.navbar-links a:hover { background: #34495e; }
+.navbar-links a.router-link-active { background: #3a5a7a; }
 
 .logout-btn {
   background: #e74c3c;
@@ -106,17 +112,10 @@ const logout = () => {
   font-size: 14px;
   transition: background 0.2s;
 }
+.logout-btn:hover { background: #c0392b; }
 
-.logout-btn:hover {
-  background: #c0392b;
-}
-
-/* Адаптивность */
 @media (max-width: 768px) {
-  .navbar-toggle {
-    display: block;
-  }
-
+  .navbar-toggle { display: flex; }
   .navbar-links {
     display: none;
     flex-direction: column;
@@ -124,25 +123,13 @@ const logout = () => {
     gap: 8px;
     padding: 12px 0;
   }
-
-  .navbar-links-open {
-    display: flex;
-  }
-
-  .navbar-container {
-    flex-wrap: wrap;
-  }
-
-  .navbar-links a {
+  .navbar-links-open { display: flex; }
+  .navbar-container { flex-wrap: wrap; }
+  .navbar-links a, .logout-btn {
     width: 100%;
     text-align: center;
     padding: 10px;
-  }
-
-  .logout-btn {
-    width: 100%;
-    text-align: center;
-    padding: 10px;
+    font-size: 16px;
   }
 }
 </style>

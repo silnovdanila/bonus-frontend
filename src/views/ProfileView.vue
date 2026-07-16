@@ -1,63 +1,63 @@
 <template>
   <div class="profile-page">
     <h1>Профиль</h1>
-    <div class="profile-card">
-      <div class="profile-field">
+
+    <div class="card profile-card">
+      <div class="input-group">
         <label>Email</label>
-        <span>{{ user.email || '—' }}</span>
+        <span class="profile-email">{{ user.email || '—' }}</span>
       </div>
-      <div class="profile-field">
+      <div class="input-group">
         <label>ФИО</label>
         <input v-model="editData.fullName" placeholder="Введите ФИО" />
       </div>
-      <div class="profile-field">
+      <div class="input-group">
         <label>Телефон</label>
         <input v-model="editData.phone" placeholder="Введите телефон" />
       </div>
-      <div class="profile-field">
+      <div class="input-group">
         <label>Дата рождения</label>
         <input v-model="editData.birthDate" type="date" />
       </div>
 
-      <button @click="updateProfile" class="btn-primary" :disabled="loading">
-        {{ loading ? 'Сохранение...' : 'Сохранить изменения' }}
+      <button class="btn btn-primary" @click="updateProfile" :disabled="loading">
+        {{ loading ? 'Сохранение...' : 'Сохранить' }}
       </button>
       <p v-if="updateMessage" class="success-message">{{ updateMessage }}</p>
       <p v-if="updateError" class="error-message">{{ updateError }}</p>
     </div>
-    <div class="profile-card">
+
+    <div class="card profile-card">
       <h2>Смена пароля</h2>
-      <div class="profile-field">
+      <div class="input-group">
         <label>Текущий пароль</label>
         <input v-model="passwordData.oldPassword" type="password" placeholder="Введите текущий пароль" />
       </div>
-      <div class="profile-field">
+      <div class="input-group">
         <label>Новый пароль</label>
         <input v-model="passwordData.newPassword" type="password" placeholder="Введите новый пароль" />
       </div>
-
-      <button @click="changePassword" class="btn-secondary" :disabled="loadingPassword">
+      <button class="btn btn-secondary" @click="changePassword" :disabled="loadingPassword">
         {{ loadingPassword ? 'Смена...' : 'Сменить пароль' }}
       </button>
       <p v-if="passwordMessage" class="success-message">{{ passwordMessage }}</p>
       <p v-if="passwordError" class="error-message">{{ passwordError }}</p>
     </div>
 
-    <div class="profile-card danger">
+    <div class="card profile-card danger">
       <h2>Удаление аккаунта</h2>
-      <p class="warning">Это действие необратимо. Все данные будут потеряны.</p>
-      <div class="profile-field">
+      <p class="warning">Это действие необратимо.</p>
+      <div class="input-group">
         <label>Подтверждение паролем</label>
         <input v-model="deleteData.password" type="password" placeholder="Введите пароль" />
       </div>
-      <div class="profile-field">
+      <div class="input-group">
         <label>
           <input v-model="deleteData.confirm" type="checkbox" />
           Я подтверждаю удаление
         </label>
       </div>
-
-      <button @click="deleteAccount" class="btn-danger" :disabled="loadingDelete || !deleteData.confirm">
+      <button class="btn btn-danger" @click="deleteAccount" :disabled="loadingDelete || !deleteData.confirm">
         {{ loadingDelete ? 'Удаление...' : 'Удалить аккаунт' }}
       </button>
       <p v-if="deleteMessage" class="success-message">{{ deleteMessage }}</p>
@@ -77,6 +77,8 @@ const authStore = useAuthStore();
 
 const user = ref({ email: '', fullName: '', phone: '', birthDate: '' });
 const editData = ref({ fullName: '', phone: '', birthDate: '' });
+const passwordData = ref({ oldPassword: '', newPassword: '' });
+const deleteData = ref({ password: '', confirm: false });
 
 const loading = ref(false);
 const loadingPassword = ref(false);
@@ -88,228 +90,89 @@ const passwordError = ref('');
 const deleteMessage = ref('');
 const deleteError = ref('');
 
-const passwordData = ref({ oldPassword: '', newPassword: '' });
-
-const deleteData = ref({ password: '', confirm: false });
-
 const loadProfile = async () => {
   try {
-    const response = await api.get('/profile');
-    console.log('Профиль загружен:', response.data);
-
-    user.value = response.data || {};
+    const res = await api.get('/profile');
+    user.value = res.data || {};
     editData.value = {
-      fullName: response.data.fullName || '',
-      phone: response.data.phone || '',
-      birthDate: response.data.birthDate || '',
+      fullName: res.data.fullName || '',
+      phone: res.data.phone || '',
+      birthDate: res.data.birthDate || '',
     };
-  } catch (error) {
-    console.error('Ошибка загрузки профиля:', error);
-    updateError.value = 'Ошибка загрузки профиля';
-  }
+  } catch (e) { console.error(e); }
 };
 
 const updateProfile = async () => {
   loading.value = true;
   updateMessage.value = '';
   updateError.value = '';
-
   try {
-    const response = await api.put('/profile', editData.value);
-    user.value = response.data;
-    authStore.updateUser({ fullName: response.data.fullName });
-    updateMessage.value = 'Профиль успешно обновлён';
-  } catch (error) {
-    updateError.value = error.response?.data || 'Ошибка обновления профиля';
-  }
-
-  loading.value = false;
+    const res = await api.put('/profile', editData.value);
+    user.value = res.data;
+    authStore.updateUser({ fullName: res.data.fullName });
+    updateMessage.value = 'Профиль обновлён';
+  } catch (e) { updateError.value = e.response?.data || 'Ошибка обновления'; }
+  finally { loading.value = false; }
 };
 
 const changePassword = async () => {
   loadingPassword.value = true;
   passwordMessage.value = '';
   passwordError.value = '';
-
   try {
     await api.put('/profile/password', passwordData.value);
-    passwordMessage.value = 'Пароль успешно изменён';
+    passwordMessage.value = 'Пароль изменён';
     passwordData.value = { oldPassword: '', newPassword: '' };
-  } catch (error) {
-    passwordError.value = error.response?.data || 'Ошибка смены пароля';
-  }
-
-  loadingPassword.value = false;
+  } catch (e) { passwordError.value = e.response?.data || 'Ошибка смены пароля'; }
+  finally { loadingPassword.value = false; }
 };
 
 const deleteAccount = async () => {
-  if (!confirm('Вы уверены, что хотите удалить аккаунт?')) return;
-
+  if (!confirm('Вы уверены?')) return;
   loadingDelete.value = true;
   deleteMessage.value = '';
   deleteError.value = '';
-
   try {
     await api.delete('/profile', { data: deleteData.value });
-    deleteMessage.value = 'Аккаунт удалён. Перенаправление...';
-    setTimeout(() => {
-      authStore.logout();
-      router.push('/login');
-    }, 2000);
-  } catch (error) {
-    deleteError.value = error.response?.data || 'Ошибка удаления аккаунта';
-  }
-
-  loadingDelete.value = false;
+    deleteMessage.value = 'Аккаунт удалён';
+    setTimeout(() => { authStore.logout(); router.push('/login'); }, 1500);
+  } catch (e) { deleteError.value = e.response?.data || 'Ошибка удаления'; }
+  finally { loadingDelete.value = false; }
 };
 
-onMounted(() => {
-  loadProfile();
-});
+onMounted(loadProfile);
 </script>
 
 <style scoped>
 .profile-page {
   max-width: 600px;
   margin: 0 auto;
-}
-
-h1 {
-  margin-bottom: 24px;
-  color: #2c3e50;
-}
-
-.profile-card {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.profile-card h2 {
-  margin-bottom: 16px;
-  font-size: 18px;
-  color: #2c3e50;
+  width: 100%;
+  padding: 20px;
 }
 
 .profile-card.danger {
   border: 1px solid #e74c3c;
   background: #fdf2f2;
 }
-
-.profile-field {
-  margin-bottom: 16px;
-}
-
-.profile-field label {
+.profile-email {
   display: block;
-  font-weight: 500;
-  margin-bottom: 4px;
-  color: #555;
-}
-
-.profile-field span {
-  display: block;
-  padding: 8px 12px;
+  padding: 10px 12px;
   background: #f5f7fa;
   border-radius: 4px;
   color: #333;
 }
+.warning { color: #e67e22; margin-bottom: 16px; }
 
-.profile-field input[type="text"],
-.profile-field input[type="password"],
-.profile-field input[type="date"] {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #dce1e8;
-  border-radius: 6px;
-  font-size: 16px;
-}
+.btn { width: 100%; margin-top: 8px; }
+.btn-primary { background: #42b883; color: white; }
+.btn-primary:hover { background: #3aa876; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-secondary { background: #3498db; color: white; }
+.btn-secondary:hover { background: #2980b9; }
+.btn-danger { background: #e74c3c; color: white; }
+.btn-danger:hover { background: #c0392b; }
 
-.profile-field input:focus {
-  outline: none;
-  border-color: #42b883;
-}
-
-.profile-field input[type="checkbox"] {
-  width: auto;
-  margin-right: 8px;
-}
-
-.btn-primary, .btn-secondary, .btn-danger {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-  width: 100%;
-}
-
-.btn-primary {
-  background: #42b883;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #3aa876;
-}
-
-.btn-primary:disabled {
-  background: #a0c4b0;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: #3498db;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: #2980b9;
-}
-
-.btn-secondary:disabled {
-  background: #8bb9d6;
-  cursor: not-allowed;
-}
-
-.btn-danger {
-  background: #e74c3c;
-  color: white;
-}
-
-.btn-danger:hover {
-  background: #c0392b;
-}
-
-.btn-danger:disabled {
-  background: #e8a098;
-  cursor: not-allowed;
-}
-
-.success-message {
-  margin-top: 12px;
-  color: #27ae60;
-  text-align: center;
-}
-
-.error-message {
-  margin-top: 12px;
-  color: #e74c3c;
-  text-align: center;
-}
-
-.warning {
-  color: #e67e22;
-  margin-bottom: 16px;
-}
-
-@media (max-width: 600px) {
-  .profile-card {
-    padding: 16px;
-  }
-}
+.success-message { color: #27ae60; text-align: center; margin-top: 12px; }
+.error-message { color: #e74c3c; text-align: center; margin-top: 12px; }
 </style>

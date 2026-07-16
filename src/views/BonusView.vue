@@ -2,16 +2,14 @@
   <div class="bonus-page">
     <h1>Бонусный баланс</h1>
 
-    <!-- Баланс -->
-    <div class="balance-card" v-if="balance !== null">
+    <div class="card balance-card" v-if="balance !== null">
       <div class="balance-amount">{{ balance }} бонусов</div>
       <div class="balance-rub">≈ {{ balanceRub }} ₽</div>
       <div class="balance-updated">Обновлено: {{ lastUpdated }}</div>
     </div>
     <div v-else class="loading">Загрузка...</div>
 
-    <!-- Фильтры -->
-    <div class="filters">
+    <div class="card filters">
       <div class="filter-group">
         <label>Тип:</label>
         <select v-model="filters.type">
@@ -36,9 +34,8 @@
       <button class="btn-reset" @click="resetFilters">Сбросить</button>
     </div>
 
-    <!-- История транзакций -->
     <h2>История операций</h2>
-    <div class="transactions-list">
+    <div class="card transactions-list">
       <div v-if="transactions.length === 0" class="empty">Нет транзакций</div>
       <div
         v-for="tx in transactions"
@@ -58,7 +55,6 @@
       </div>
     </div>
 
-    <!-- Пагинация -->
     <div class="pagination" v-if="totalPages > 1">
       <button @click="prevPage" :disabled="page === 0">←</button>
       <span>{{ page + 1 }} / {{ totalPages }}</span>
@@ -79,170 +75,78 @@ const page = ref(0);
 const size = ref(10);
 const totalPages = ref(0);
 
-// Фильтры
-const filters = ref({
-  type: 'ALL',
-  dateFrom: '',
-  dateTo: ''
-});
+const filters = ref({ type: 'ALL', dateFrom: '', dateTo: '' });
 
 const loadBalance = async () => {
   try {
-    const response = await api.get('/bonus/balance');
-    balance.value = response.data.balance;
-    balanceRub.value = response.data.balanceRub;
-    lastUpdated.value = formatDate(response.data.lastUpdated);
-  } catch (error) {
-    console.error('Ошибка загрузки баланса:', error);
-  }
+    const res = await api.get('/bonus/balance');
+    balance.value = res.data.balance;
+    balanceRub.value = res.data.balanceRub;
+    lastUpdated.value = formatDate(res.data.lastUpdated);
+  } catch (e) { console.error(e); }
 };
 
 const loadTransactions = async () => {
   try {
-    const params = {
-      page: page.value,
-      size: size.value
-    };
+    const params = { page: page.value, size: size.value };
+    if (filters.value.type !== 'ALL') params.type = filters.value.type;
+    if (filters.value.dateFrom) params.dateFrom = filters.value.dateFrom;
+    if (filters.value.dateTo) params.dateTo = filters.value.dateTo;
 
-    if (filters.value.type !== 'ALL') {
-      params.type = filters.value.type;
-    }
-    if (filters.value.dateFrom) {
-      params.dateFrom = filters.value.dateFrom;
-    }
-    if (filters.value.dateTo) {
-      params.dateTo = filters.value.dateTo;
-    }
-
-    const response = await api.get('/bonus/transactions', { params });
-    transactions.value = response.data.content || [];
-    totalPages.value = response.data.totalPages || 0;
-  } catch (error) {
-    console.error('Ошибка загрузки транзакций:', error);
-  }
+    const res = await api.get('/bonus/transactions', { params });
+    transactions.value = res.data.content || [];
+    totalPages.value = res.data.totalPages || 0;
+  } catch (e) { console.error(e); }
 };
 
-const applyFilters = () => {
-  page.value = 0;
-  console.log('Применяем фильтры:', filters.value);
-  loadTransactions();
-};
-
+const applyFilters = () => { page.value = 0; loadTransactions(); };
 const resetFilters = () => {
-  filters.value = {
-    type: 'ALL',
-    dateFrom: '',
-    dateTo: ''
-  };
+  filters.value = { type: 'ALL', dateFrom: '', dateTo: '' };
   page.value = 0;
   loadTransactions();
 };
 
-const formatDate = (dateStr) => {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  return date.toLocaleString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
+const formatDate = (s) => s ? new Date(s).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+const getTypeClass = (t) => ({ EARN: 'earn', BURN: 'burn', EXPIRE: 'expire' }[t] || '');
+const showDetail = (id) => console.log('Детали транзакции:', id);
 
-const getTypeClass = (type) => {
-  return {
-    EARN: 'earn',
-    BURN: 'burn',
-    EXPIRE: 'expire'
-  }[type] || '';
-};
+const prevPage = () => { if (page.value > 0) { page.value--; loadTransactions(); } };
+const nextPage = () => { if (page.value < totalPages.value - 1) { page.value++; loadTransactions(); } };
 
-const showDetail = (id) => {
-  console.log('Детали транзакции:', id);
-};
-
-const prevPage = () => {
-  if (page.value > 0) {
-    page.value--;
-    loadTransactions();
-  }
-};
-
-const nextPage = () => {
-  if (page.value < totalPages.value - 1) {
-    page.value++;
-    loadTransactions();
-  }
-};
-
-onMounted(() => {
-  loadBalance();
-  loadTransactions();
-});
+onMounted(() => { loadBalance(); loadTransactions(); });
 </script>
 
 <style scoped>
 .bonus-page {
   max-width: 800px;
   margin: 0 auto;
-}
-
-h1, h2 {
-  margin-bottom: 20px;
-  color: #2c3e50;
+  width: 100%;
+  padding: 20px;
 }
 
 .balance-card {
   background: linear-gradient(135deg, #42b883, #2d8f6f);
   color: white;
-  padding: 30px;
-  border-radius: 12px;
-  margin-bottom: 30px;
   text-align: center;
 }
+.balance-amount { font-size: clamp(32px, 8vw, 48px); font-weight: bold; }
+.balance-rub { font-size: clamp(16px, 3vw, 20px); opacity: 0.9; }
+.balance-updated { margin-top: 10px; font-size: 14px; opacity: 0.7; }
 
-.balance-amount {
-  font-size: 48px;
-  font-weight: bold;
-}
-
-.balance-rub {
-  font-size: 20px;
-  opacity: 0.9;
-}
-
-.balance-updated {
-  margin-top: 10px;
-  font-size: 14px;
-  opacity: 0.7;
-}
-
-/* Фильтры */
 .filters {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   align-items: center;
-  background: white;
-  padding: 16px 20px;
-  border-radius: 8px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
-
 .filter-group {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1 1 auto;
+  min-width: 120px;
 }
-
-.filter-group label {
-  font-weight: 500;
-  color: #555;
-  font-size: 14px;
-}
-
+.filter-group label { font-weight: 500; color: #555; font-size: 14px; white-space: nowrap; }
 .filter-group select,
 .filter-group input {
   padding: 6px 10px;
@@ -250,52 +154,25 @@ h1, h2 {
   border-radius: 4px;
   font-size: 14px;
   background: white;
+  width: 100%;
+  min-height: 40px;
 }
-
-.filter-group select:focus,
-.filter-group input:focus {
-  outline: none;
-  border-color: #42b883;
-}
-
-.btn-apply {
-  padding: 6px 20px;
-  background: #42b883;
-  color: white;
+.btn-apply, .btn-reset {
+  padding: 8px 20px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  transition: background 0.2s;
+  font-weight: 600;
+  min-height: 40px;
+  flex: 1 1 auto;
 }
+.btn-apply { background: #42b883; color: white; }
+.btn-apply:hover { background: #3aa876; }
+.btn-reset { background: #95a5a6; color: white; }
+.btn-reset:hover { background: #7f8c8d; }
 
-.btn-apply:hover {
-  background: #3aa876;
-}
-
-.btn-reset {
-  padding: 6px 16px;
-  background: #95a5a6;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.2s;
-}
-
-.btn-reset:hover {
-  background: #7f8c8d;
-}
-
-/* Транзакции */
-.transactions-list {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  overflow: hidden;
-}
-
+.transactions-list { padding: 0; overflow: hidden; }
 .transaction-item {
   display: flex;
   justify-content: space-between;
@@ -303,99 +180,41 @@ h1, h2 {
   padding: 12px 16px;
   border-bottom: 1px solid #ecf0f1;
   cursor: pointer;
-  transition: background 0.15s;
 }
-
-.transaction-item:hover {
-  background: #f8f9fa;
-}
-
-.transaction-item:last-child {
-  border-bottom: none;
-}
-
-.tx-left {
-  display: flex;
-  flex-direction: column;
-}
-
-.tx-date {
-  font-size: 12px;
-  color: #95a5a6;
-}
-
-.tx-description {
-  font-size: 14px;
-}
-
-.tx-amount {
-  font-weight: bold;
-  font-size: 16px;
-}
-
-.earn {
-  color: #27ae60;
-}
-
-.burn {
-  color: #e74c3c;
-}
-
-.expire {
-  color: #f39c12;
-}
-
-.loading, .empty {
-  text-align: center;
-  padding: 20px;
-  color: #7f8c8d;
-}
+.transaction-item:hover { background: #f8f9fa; }
+.transaction-item:last-child { border-bottom: none; }
+.tx-left { display: flex; flex-direction: column; min-width: 0; }
+.tx-date { font-size: 12px; color: #95a5a6; }
+.tx-description { font-size: 14px; word-break: break-word; }
+.tx-amount { font-weight: bold; font-size: 16px; white-space: nowrap; }
+.earn { color: #27ae60; }
+.burn { color: #e74c3c; }
+.expire { color: #f39c12; }
 
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 16px;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: 24px;
 }
-
 .pagination button {
-  padding: 6px 16px;
+  padding: 8px 16px;
   background: #42b883;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
 }
-
-.pagination button:disabled {
-  background: #bdc3c7;
-  cursor: not-allowed;
-}
+.pagination button:disabled { background: #95a5a6; cursor: not-allowed; }
+.pagination button:hover:not(:disabled) { background: #3aa876; }
 
 @media (max-width: 600px) {
-  .filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .filter-group {
-    flex-wrap: wrap;
-  }
-
-  .filter-group select,
-  .filter-group input {
-    flex: 1;
-    min-width: 120px;
-  }
-
-  .btn-apply, .btn-reset {
-    width: 100%;
-    padding: 10px;
-  }
-
-  .balance-amount {
-    font-size: 36px;
-  }
+  .filters { flex-direction: column; align-items: stretch; }
+  .filter-group { flex-direction: column; align-items: stretch; gap: 4px; }
+  .btn-apply, .btn-reset { width: 100%; }
+  .transaction-item { flex-wrap: wrap; gap: 8px; }
 }
 </style>

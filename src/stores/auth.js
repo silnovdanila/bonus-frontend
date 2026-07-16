@@ -10,9 +10,9 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   actions: {
-    async login(email, password) {
+    async login(login, password) {
       try {
-        const response = await api.post('/auth/login', { email, password });
+        const response = await api.post('/auth/login', { login, password });
         const { accessToken, refreshToken, email: userEmail, fullName } = response.data;
 
         this.accessToken = accessToken;
@@ -59,6 +59,7 @@ export const useAuthStore = defineStore('auth', {
         };
       }
     },
+
     logout() {
       this.accessToken = null;
       this.refreshToken = null;
@@ -80,7 +81,7 @@ export const useAuthStore = defineStore('auth', {
         this.user = JSON.parse(userData);
         this.isAuthenticated = true;
       }
-  },
+    },
 
     updateUser(userData) {
       this.user = { ...this.user, ...userData };
